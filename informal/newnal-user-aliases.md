@@ -12,6 +12,11 @@ Servers advertise support via `GET /_matrix/client/v3/capabilities`:
 {"capabilities": {"com.newnal.user_alias": {"enabled": true}}}
 ```
 
+A **server-blind variant** — removing the server-held anchor↔pseudonym
+mapping entirely (blind-token self-registration, per-pseudonym UnifiedPush,
+client-held encrypted registry) — is specified separately in
+[newnal-user-aliases-server-blind.md](./newnal-user-aliases-server-blind.md).
+
 ## Motivation
 
 Matrix user IDs are permanent and are embedded in every event a user sends
@@ -76,6 +81,16 @@ The `login_token` is consumed with the standard
 `POST /_matrix/client/v3/login` `{"type": "m.login.token", "token": …}`,
 which creates a **new device** (and therefore fresh E2EE identity) on the
 pseudonym account. `404 M_NOT_FOUND` if no pseudonym exists for the room.
+
+> **MAS/MSC3861 caveat.** This flow assumes Synapse-native authentication.
+> On a deployment that delegates auth to the Matrix Authentication Service
+> (MSC3861 — e.g. the Newnal telecom-authentication node), Synapse's
+> legacy `/login` is disabled and Synapse-local pseudonym accounts are not
+> reachable through MAS-issued tokens: pseudonym creation and token
+> issuance must be mediated by MAS instead, keeping this endpoint's
+> response shape. See §7.1 of the
+> [server-blind spec](./newnal-user-aliases-server-blind.md) for the
+> placement rules; the same relocation applies to this variant.
 
 ### Invites
 
