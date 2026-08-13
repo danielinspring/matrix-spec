@@ -9,6 +9,17 @@ Status: draft. Target platform: Newnal private phone (Android). iOS is
 explicitly out of scope (APNs' one-token-per-install model reintroduces the
 push join key this design removes; see §5).
 
+Implementation status: the homeserver side (refusing to hold the mapping at
+all) is implemented behind `user_aliases.mode: server_blind` in the messaging
+node; blind-token issuance (§3) and the network/push requirements (§5) are
+not. See `custom_docs/todo/server-blind-implementation.md` in the messaging
+node fork for the track-by-track status.
+
+**Network unlinkability is a co-requirement, not an optimisation.** Removing
+the stored mapping is defeated if pseudonym sessions are reconnectable by IP
+address, and hiding IP addresses is defeated if the mapping is still stored —
+neither half stands alone. See §5.8.
+
 The key words MUST, MUST NOT, SHOULD, MAY are to be interpreted as in
 RFC 2119.
 
@@ -36,10 +47,16 @@ Blind mode removes the **deterministic** link from the server:
 | Push (UP) server operator | subset of homeserver knowledge | new trust boundary — see §5.4 |
 | Network observer (carrier) | TLS metadata only | TLS metadata only |
 
-Explicit non-goals (kept honest): IP/timing correlation at the homeserver
-(mitigated by mobile CGNAT, UP wake-based syncing, and jitter — never
-eliminated), traffic-volume analysis, and collusion between the homeserver
-operator and the UP server operator (§5.7).
+Explicit non-goals (kept honest), after §5.8's network requirements are also
+met: **device-level timing correlation** (one device's sessions wake together
+— reducible by jitter, never eliminated), traffic-volume analysis, UP
+subscription grouping, and collusion between the homeserver operator and the
+UP server operator (§5.7).
+
+Note that **source-IP correlation is not on that list**: it is a real and
+sufficient re-identification vector, and it is addressed — as a MUST — by the
+network requirements in §5.8 rather than accepted. Blind mode without §5.8 is
+incomplete, not merely weaker.
 
 ## 2. Identity and data model
 
@@ -280,6 +297,55 @@ permanent sync loop.
 * Traffic volume per endpoint approximates per-room activity; this is
   inherent to push and is not mitigated.
 
+### 5.8 Network-layer unlinkability — normative
+
+Deleting the stored mapping accomplishes nothing if the homeserver can
+re-group pseudonym sessions by **source IP address**: N pseudonyms arriving
+from one address is the same join key the database row used to be. Network
+unlinkability is therefore a co-requirement of this design, not a hardening
+extra — and the converse holds too: anonymising the network while the mapping
+is still stored buys nothing. Neither half stands alone.
+
+| # | Requirement | Level |
+|---|---|---|
+| N1 | Pseudonym sessions reach the homeserver over an anonymising network | MUST |
+| N2 | Each pseudonym session uses its own circuit / exit path | MUST |
+| N3 | The homeserver is reachable as an onion service (no exit node in the path) | SHOULD |
+| N4 | The anonymising transport is on by default for all users, not opt-in | MUST |
+| N5 | UP distributor traffic also uses the anonymising network | SHOULD |
+
+Notes:
+
+* **Onion service (N3)** is preferable to exit-node routing: the operator
+  controls both ends, so there is no exit-node blocking or interception
+  surface, and latency is materially better than general Tor browsing.
+* **Default-on (N4)** is the same anonymity-set argument as the uniform token
+  quota (§3.1): if the anonymising transport were optional, *using* it would
+  itself single a user out.
+* A deployment that ships its own OS (as the Newnal private phone does) can
+  enforce N2 below the application, which an ordinary app cannot.
+
+**What the network layer does not fix.** Two vectors survive N1–N5 and must
+not be described as solved:
+
+* **Device-level timing synchronisation** — one device's sessions sleep and
+  wake together. Anonymised transport hides *where* a request came from, never
+  *when*. Independently scheduled, jittered wake-ups (P9) reduce this at a
+  direct cost in notification latency; the acceptable delay is a product
+  decision.
+* **UP subscription grouping** — push travels a separate path, and a UP
+  distributor multiplexes every endpoint over one device connection by design
+  (that is what makes it battery-efficient). Running the distributor's
+  connection over the anonymising network hides the device's address from the
+  UP server but not the grouping, so operator separation (P6) remains
+  required. Opening one connection per pseudonym would remove the grouping and
+  destroy battery life; it is not recommended.
+
+An earlier draft of this document treated anonymised transport as
+incompatible with mobile push. That is too strong: with UnifiedPush the two
+compose, and the genuine residual risks are the two above rather than the IP
+address itself.
+
 ## 6. Recovery and lifecycle
 
 * **Registry backup.** The client maintains a versioned registry
@@ -324,7 +390,7 @@ Placement under MAS:
 |---|---|
 | Blind-token issuance (§3.1) | MAS endpoint, authenticated by the anchor's MAS session |
 | Blind-token redemption (§3.2) | MAS: verifies token + spent-set, creates the pseudonym **as a MAS user**, issues its device/refresh tokens directly |
-| Pseudonym → Synapse propagation | MAS→Synapse provisioning as for any user, plus marking `user_type: "pseudonym"` on the Synapse side so directory/MAU exclusion and the membership gate keep working |
+| Pseudonym → Synapse propagation | MAS→Synapse provisioning as for any user. The homeserver types the account `pseudonym` itself, by recognising the reserved localpart prefix on the trusted provisioning path — so directory/MAU exclusion and the membership gate keep working without MAS passing (or the homeserver storing) any ownership hint. The prefix must be a namespace only the trusted path can mint, or a user could self-assign those exemptions |
 | Session/refresh lifecycle for pseudonyms | MAS (standard token machinery) |
 | Deactivation | client iterates its registry against MAS; MAS propagates to Synapse |
 
@@ -369,6 +435,12 @@ response shape.
 | Room members cannot link a person across rooms (IDs or device keys) | yes |
 | Homeserver holds no record mapping anchor ↔ pseudonym ↔ rooms | yes |
 | Push layer introduces no shared join key across pseudonyms | yes (P1–P8) |
-| Homeserver can still infer links statistically (IP, timing, token counts) | yes — bounded, not eliminated (§3.3, §5.6, §5.7) |
+| Source IP cannot re-group a device's pseudonyms | yes — but only with §5.8 (N1–N5) also deployed |
+| Homeserver can still infer links statistically (timing, token counts) | yes — bounded, not eliminated (§3.3, §5.6, §5.7, §5.8) |
 | Survives homeserver + UP operator collusion | no (§5.7) |
 | Device loss without recovery code preserves room access | no (§6) |
+
+All three of these must ship together for the headline claim to hold: the
+homeserver-side mapping removal (§2, §7), unlinkable issuance (§3), and the
+network + push requirements (§5). Any one of them alone leaves a sufficient
+re-identification path.
