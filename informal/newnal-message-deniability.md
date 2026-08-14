@@ -14,6 +14,18 @@ group rooms (§5.8). Not yet implemented; the repo-by-repo implementation
 review lives in the messaging-node fork at
 `custom_docs/todo/message-deniability-key-disclosure.md`.
 
+A 2026-08 literature survey of what exists **outside** the seven approaches in
+§2 is recorded in
+[newnal-message-deniability-research-2026-08.md](./newnal-message-deniability-research-2026-08.md).
+It changes no decision here, but three of its results bear on this document and
+should be read before scoping work: attested-hardware peers defeat ideas ③ and
+④ while leaving the publicly-forgeable ones (①, ②, ⑤) intact; deniability is
+defeated at the **system** layer rather than the crypto layer, so §0's framing
+is at most half the problem; and the only empirical study of the legal
+counter-case found deniability never raised, with zero measured effect. The
+survey's own verification infrastructure partly failed — read its §0 before
+citing anything from it.
+
 ## 0. Why Matrix messages are non-repudiable today
 
 Megolm authenticates every message with a **per-session Ed25519 signature**
