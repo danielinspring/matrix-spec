@@ -14,6 +14,18 @@ group rooms (§5.8). Not yet implemented; the repo-by-repo implementation
 review lives in the messaging-node fork at
 `custom_docs/todo/message-deniability-key-disclosure.md`.
 
+**Status decision, 2026-08-15: deferred indefinitely.** No implementation work
+until one of the re-check conditions in
+[the 2026-08 survey](./newnal-message-deniability-research-2026-08.md) §6 is
+met. The reasoning: the only empirical study of the legal counter-case found
+deniability never raised and zero measured effect; the authors of that study
+recommend anonymity / metadata-minimisation instead, which is the axis already
+implemented; system-layer attribution survives any Megolm-layer change; and the
+cost — two coupled forks under long-term maintenance — is the largest of the
+three tracks. Deferring is cheap because idea ② needs almost no server change,
+so it is independent of the pseudonym and server-blind work; starting it is not
+cheap to undo, because the fork maintenance begins immediately.
+
 A 2026-08 literature survey of what exists **outside** the seven approaches in
 §2 is recorded in
 [newnal-message-deniability-research-2026-08.md](./newnal-message-deniability-research-2026-08.md).

@@ -30,6 +30,58 @@ refutation reason was "quote not verifiable against primary text" — not "claim
 is false."** Absence of confirmation in this document is **not** evidence of
 absence. §6 lists what to re-fetch from a session with scholarly egress.
 
+### Addendum, 2026-08-15 — partial re-check
+
+Search was retried after the budget reset. **Search works again; fetching does
+not.** The egress proxy still answers `403` to `CONNECT` for
+`eprint.iacr.org`, `petsymposium.org`, `arxiv.org`, `research.tue.nl` and
+authors' personal sites, confirmed against the proxy's own status endpoint. So
+primary full text remains unreachable and everything below is still
+abstract-and-metadata level — but three items moved.
+
+**F7a (epochal signatures) is upgraded, and materially.** It is not an ePrint
+preprint: it was published at **IEEE Symposium on Security and Privacy 2021**,
+by **Andreas Hülsing and Fiona Johanna Weber** (TU Eindhoven). *(The earlier
+record's implicit "paper only, no venue" framing was wrong, and one search
+result gave the second author as "Florian Weber" — it is Fiona Johanna Weber.)*
+A top-tier peer-reviewed venue changes how much weight the abstract-level claims
+carry. Three of them are now corroborated across several independent results:
+
+* *"does not require pairwise key establishment of participants"*;
+* *"allows to add and remove participants without requiring to re-initialize the
+  chat, which allows the deployment in protocols that are also designed to scale
+  to very large groups"*;
+* the precondition, stated plainly: the transform works for protocols that use
+  signatures for authentication **and that become deniable if the signatures are
+  removed**.
+
+It also names its point of comparison: **mpOTR (CCS'09)** is the "previous
+proposal" whose pairwise-key-establishment requirement it improves on — a
+partial answer to §6's mpOTR question, and evidence that this line of work is
+the direct successor to it.
+
+Still unknown, and still the reason not to act: **epoch length, epoch-transition
+cost, signature and key sizes, verification cost, and the authors' own stated
+limitations.** Those need the full text. §6 item 1 stands unchanged.
+
+**F6 / the counter-case source is identified.** `eprint.iacr.org/2025/1949` is
+**"On the Credibility of Deniable Communication in Court", Jacob Leiken and
+Sunoo Park.** Its thesis, from the abstract: courts authenticate evidence using
+processes developed over centuries **to account for the reality that evidence
+has always been forgeable**, and those processes rely on factors outside
+cryptographic models. Some prior deniability literature suggested courts should
+be unable to use evidence from deniable systems; the authors argue that does not
+follow.
+
+Read it carefully before deploying it as ammunition: the authors propose a
+**model of credibility** to support *"more nuanced discourse on the strengths
+and limitations of cryptographic guarantees"* — this is a case against the
+strong claim that deniability buys evidentiary exclusion, **not** a blanket
+"deniability is worthless". Cite it for the former only.
+
+**No change** to F1–F5 or to the other leads. §5's list of details not to repeat
+stands, except that the second author's name is now settled.
+
 ### Run metadata
 
 | | |
@@ -532,15 +584,20 @@ fidelity against primary text**, which was unreachable.
 
 Requires a session with scholarly egress. All of §0's blocked hosts are needed.
 
-1. **Epochal signatures (`2020/1138`)** — do they deliver per-epoch
+1. **Epochal signatures (`2020/1138`, IEEE S&P 2021, Hülsing & Weber)** — the
+   abstract-level claims are corroborated (see the addendum in §0); what is
+   still missing is everything that decides feasibility. Do they deliver
+   per-epoch
    unforgeability, post-expiry universal forgeability, no pairwise setup, and
    membership-churn tolerance? Concrete epoch length, key size, and per-message
    verification cost on a mobile client? *If it holds, the design question
    becomes whether an interop-breaking new signature algorithm ID is an
    acceptable price versus ②'s no-wire-change disclosure.*
-2. **`2025/1949`** — the "courts already assume all evidence is forgeable"
-   thesis. The most direct statement of the counter-case; drives the decision on
-   whether to build ② at all.
+2. **`2025/1949` — Leiken & Park, "On the Credibility of Deniable Communication
+   in Court"** — identified and thesis corroborated (§0 addendum). Remaining
+   question is their *credibility model* itself: what would make a deniable
+   system's output actually less credible in practice, since that is the only
+   part that could change a design.
 3. **Does the attestation attack extend to publicly-forgeable designs via
    timestamped receipt?** An enclave attesting *"I recorded these bytes at T,
    before the session key was published at T+δ"*. **If yes, items ② and ⑤ lose
